@@ -72,18 +72,16 @@ New container images are built and published automatically every ~24h.
   These are release builds, containing the latest stable version of NetBox.
   They contain the support files of _NetBox Docker version_ `a.b.c`.
   You must use _NetBox Docker version_ `a.b.c` to guarantee the compatibility.
-  These images are automatically built from [the `master` branch of NetBox][netbox-master].
 * `snapshot-a.b.c`:
   These are prerelease builds.
   They contain the support files of _NetBox Docker version_ `a.b.c`.
   You must use _NetBox Docker version_ `a.b.c` to guarantee the compatibility.
-  These images are automatically built from the [`develop` branch of NetBox][netbox-develop].
+  These images are automatically built from the [`main` branch of NetBox][netbox-main].
 
 For each of the above tag, there is an extra tag:
 
 * `vX.Y.Z`, `vX.Y`:
   This is the same version as `vX.Y.Z-a.b.c` (or `vX.Y-a.b.c`, respectively).
-  It always points to the latest version of _NetBox Docker_.
 * `latest`
   This is the same version as `latest-a.b.c`.
   It always points to the latest version of _NetBox Docker_.
@@ -92,8 +90,7 @@ For each of the above tag, there is an extra tag:
   It always points to the latest version of _NetBox Docker_.
 
 [netbox-releases]: https://github.com/netbox-community/netbox/releases
-[netbox-master]: https://github.com/netbox-community/netbox/tree/master
-[netbox-develop]: https://github.com/netbox-community/netbox/tree/develop
+[netbox-main]: https://github.com/netbox-community/netbox/tree/main
 
 ## Documentation
 
