@@ -1,6 +1,6 @@
 # Development, Maintenance and Community Principals for _NetBox Docker_
 
-This principals shall guide the development and the maintenance of _NetBox Docker_.
+These principals shall guide the development and the maintenance of _NetBox Docker_.
 
 ## Basic principals
 
@@ -10,7 +10,7 @@ Everyone is asked to respect that.
 This means, that …
 
 - … sometimes features are not implemented as fast as one might like -- or not at all.
-- … sometimes nobody is looking at bugs or they are not fixed as fast as one might like -- or not at all.
+- … sometimes nobody is looking at bugs, or they are not fixed as fast as one might like -- or not at all.
 - … sometimes PRs are not reviewed for an extended period.
 
 Everyone is welcome to provide improvements and bug fixes to the benefit of everyone else.
@@ -21,12 +21,12 @@ The goal of the _NetBox Docker_ project is to provide a container to run the bas
 The container should feel like a native container -- as if it were provided by NetBox itself:
 
 - Configuration via environment variables where feasible.
-  - Except: Whenever a `dict` is required as value of a configuration setting,
-    then it must not be provided through an environment variable.
+  - Except: Whenever a complex type such as a `dict` is required as value of a configuration setting,
+    then it shall not be provided through an environment variable.
 - Configuration of secrets via secret files.
-- Log output to standard out (STDOUT/&1) / standard error (STDERR/&2).
+- Log output to standard out (STDOUT/`&1`) / standard error (STDERR/`&2`).
 - Volumes for data and cache directories.
-  - Otherwise no mounts shall be necessary.
+  - Otherwise, no mounts shall be necessary.
 - Runs a non-root user by default.
 - One process / role for each instance.
 
@@ -39,7 +39,7 @@ The container does not bundle any community plugins.
 
 ## Maintenance Principals
 
-The main goals of maintainig _NetBox Docker_ are:
+The main goals of maintaining _NetBox Docker_ are:
 
 - Keeping the project at a high quality level.
 - Keeping the maintenance effort minimal.
@@ -51,8 +51,10 @@ The following guidelines help us to achieve these goals:
 - All manual tasks must be documented.
 - All changes are reviewed by at least one maintainer.
   - Changes of maintainers are reviewed by at least one other maintainer.
+    (Except if there's only one maintainer left.)
 - The infrastructure beyond what GitHub provides shall be kept to a minimum.
-  - On request, every maintainer shall get access to infrastructure that is beyond GitHub (at the time of writing that's _Docker Hub_ and _Quay_ in particular).
+  - On request, every maintainer shall get access to infrastructure that is beyond GitHub
+    (at the time of writing that's _Docker Hub_ and _Quay_ in particular).
 
 ## Community Principals
 
