@@ -133,7 +133,7 @@ To check the version installed on your system run `docker --version` and `docker
 ## Updating
 
 Please read [the release notes][releases] carefully when updating to a new image version.
-Note that the version of the NetBox Docker container image must stay in sync with the version of the git repository.
+Note that the version of the NetBox Docker container image must stay in sync with the version of the Git repository.
 
 If you update for the first time, be sure [to follow our _How To Update NetBox Docker_ guide in the wiki][netbox-docker-wiki-updating].
 

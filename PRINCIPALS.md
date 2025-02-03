@@ -13,7 +13,7 @@ This means, that …
 - … sometimes nobody is looking at bugs, or they are not fixed as fast as one might like -- or not at all.
 - … sometimes PRs are not reviewed for an extended period.
 
-Everyone is welcome to provide improvements and bug fixes to the benefit of everyone else.
+Everyone is welcome to provide improvements and bugfixes to the benefit of everyone else.
 
 ## Development Principals
 
