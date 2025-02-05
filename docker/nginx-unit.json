@@ -5,11 +5,7 @@
       "forwarded": {
         "client_ip": "X-Forwarded-For",
         "protocol": "X-Forwarded-Proto",
-        "source": [
-          "10.0.0.0/8",
-          "172.16.0.0/12",
-          "192.168.0.0/16"
-        ]
+        "source": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
       }
     },
     "0.0.0.0:8081": {
@@ -17,11 +13,7 @@
       "forwarded": {
         "client_ip": "X-Forwarded-For",
         "protocol": "X-Forwarded-Proto",
-        "source": [
-          "10.0.0.0/8",
-          "172.16.0.0/12",
-          "192.168.0.0/16"
-        ]
+        "source": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
       }
     },
     "[::]:8080": {
@@ -29,10 +21,7 @@
       "forwarded": {
         "client_ip": "X-Forwarded-For",
         "protocol": "X-Forwarded-Proto",
-        "source": [
-          "fc00::/7",
-          "fe80::/10"
-        ]
+        "source": ["fc00::/7", "fe80::/10"]
       }
     },
     "[::]:8081": {
@@ -40,10 +29,7 @@
       "forwarded": {
         "client_ip": "X-Forwarded-For",
         "protocol": "X-Forwarded-Proto",
-        "source": [
-          "fc00::/7",
-          "fe80::/10"
-        ]
+        "source": ["fc00::/7", "fe80::/10"]
       }
     }
   },
