@@ -1,27 +1,65 @@
 {
   "listeners": {
-    "*:8080": {
-      "pass": "routes"
-    }
-  },
-
-  "routes": [
-    {
-      "match": {
-        "uri": "/static/*"
-      },
-      "action": {
-        "share": "/opt/netbox/netbox${uri}"
+    "0.0.0.0:8080": {
+      "pass": "routes/main",
+      "forwarded": {
+        "client_ip": "X-Forwarded-For",
+        "protocol": "X-Forwarded-Proto",
+        "source": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
       }
     },
-
-    {
-      "action": {
-        "pass": "applications/netbox"
+    "0.0.0.0:8081": {
+      "pass": "routes/status",
+      "forwarded": {
+        "client_ip": "X-Forwarded-For",
+        "protocol": "X-Forwarded-Proto",
+        "source": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+      }
+    },
+    "[::]:8080": {
+      "pass": "routes/main",
+      "forwarded": {
+        "client_ip": "X-Forwarded-For",
+        "protocol": "X-Forwarded-Proto",
+        "source": ["fc00::/7", "fe80::/10"]
+      }
+    },
+    "[::]:8081": {
+      "pass": "routes/status",
+      "forwarded": {
+        "client_ip": "X-Forwarded-For",
+        "protocol": "X-Forwarded-Proto",
+        "source": ["fc00::/7", "fe80::/10"]
       }
     }
-  ],
-
+  },
+  "routes": {
+    "main": [
+      {
+        "match": {
+          "uri": "/static/*"
+        },
+        "action": {
+          "share": "/opt/netbox/netbox${uri}"
+        }
+      },
+      {
+        "action": {
+          "pass": "applications/netbox"
+        }
+      }
+    ],
+    "status": [
+      {
+        "match": {
+          "uri": "/status/*"
+        },
+        "action": {
+          "proxy": "http://unix:/opt/unit/unit.sock"
+        }
+      }
+    ]
+  },
   "applications": {
     "netbox": {
       "type": "python 3",
@@ -35,6 +73,5 @@
       }
     }
   },
-
   "access_log": "/dev/stdout"
 }

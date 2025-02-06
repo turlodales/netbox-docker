@@ -49,20 +49,38 @@ AUTH_LDAP_START_TLS = environ.get('AUTH_LDAP_START_TLS', 'False').lower() == 'tr
 #     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 LDAP_IGNORE_CERT_ERRORS = environ.get('LDAP_IGNORE_CERT_ERRORS', 'False').lower() == 'true'
 
+# Include this setting if you want to validate the LDAP server certificates against a CA certificate directory on your server
+# Note that this is a NetBox-specific setting which sets:
+#     ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, LDAP_CA_CERT_DIR)
+LDAP_CA_CERT_DIR = environ.get('LDAP_CA_CERT_DIR', None)
+
+# Include this setting if you want to validate the LDAP server certificates against your own CA.
+# Note that this is a NetBox-specific setting which sets:
+#     ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, LDAP_CA_CERT_FILE)
+LDAP_CA_CERT_FILE = environ.get('LDAP_CA_CERT_FILE', None)
+
 AUTH_LDAP_USER_SEARCH_BASEDN = environ.get('AUTH_LDAP_USER_SEARCH_BASEDN', '')
 AUTH_LDAP_USER_SEARCH_ATTR = environ.get('AUTH_LDAP_USER_SEARCH_ATTR', 'sAMAccountName')
+AUTH_LDAP_USER_SEARCH_FILTER: str = environ.get(
+    'AUTH_LDAP_USER_SEARCH_FILTER', f'({AUTH_LDAP_USER_SEARCH_ATTR}=%(user)s)'
+)
+
 AUTH_LDAP_USER_SEARCH = LDAPSearch(
-    AUTH_LDAP_USER_SEARCH_BASEDN,
-    ldap.SCOPE_SUBTREE,
-    "(" + AUTH_LDAP_USER_SEARCH_ATTR + "=%(user)s)"
+    AUTH_LDAP_USER_SEARCH_BASEDN, ldap.SCOPE_SUBTREE, AUTH_LDAP_USER_SEARCH_FILTER
 )
 
 # This search ought to return all groups to which the user belongs. django_auth_ldap uses this to determine group
 # heirarchy.
+
 AUTH_LDAP_GROUP_SEARCH_BASEDN = environ.get('AUTH_LDAP_GROUP_SEARCH_BASEDN', '')
 AUTH_LDAP_GROUP_SEARCH_CLASS = environ.get('AUTH_LDAP_GROUP_SEARCH_CLASS', 'group')
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(AUTH_LDAP_GROUP_SEARCH_BASEDN, ldap.SCOPE_SUBTREE,
-                                    "(objectClass=" + AUTH_LDAP_GROUP_SEARCH_CLASS + ")")
+
+AUTH_LDAP_GROUP_SEARCH_FILTER: str = environ.get(
+    'AUTH_LDAP_GROUP_SEARCH_FILTER', f'(objectclass={AUTH_LDAP_GROUP_SEARCH_CLASS})'
+)
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    AUTH_LDAP_GROUP_SEARCH_BASEDN, ldap.SCOPE_SUBTREE, AUTH_LDAP_GROUP_SEARCH_FILTER
+)
 AUTH_LDAP_GROUP_TYPE = _import_group_type(environ.get('AUTH_LDAP_GROUP_TYPE', 'GroupOfNamesType'))
 
 # Define a group required to login.

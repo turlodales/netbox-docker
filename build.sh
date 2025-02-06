@@ -39,9 +39,8 @@ SKIP_GIT    If defined, git is not invoked and \${NETBOX_PATH} will not be alter
 
 TAG         The version part of the image tag.
             ${_GREEN}Default:${_CLEAR}
-              When <branch>=master:  latest
-              When <branch>=develop: snapshot
-              Else:                  same as <branch>
+              When <branch>=main: snapshot
+              Else:               same as <branch>
 
 IMAGE_NAMES The names used for the image including the registry
             Used for tagging the image.
@@ -61,7 +60,7 @@ DOCKERFILE  The name of Dockerfile to use.
             ${_GREEN}Default:${_CLEAR} Dockerfile
 
 DOCKER_FROM The base image to use.
-            ${_GREEN}Default:${_CLEAR} 'ubuntu:22.04'
+            ${_GREEN}Default:${_CLEAR} 'ubuntu:24.04'
 
 BUILDX_PLATFORMS
             Specifies the platform(s) to build the image for.
@@ -103,23 +102,22 @@ GH_ACTION   If defined, special 'echo' statements are enabled that set the
             - FINAL_DOCKER_TAG: The final value of the DOCKER_TAG env variable
             ${_GREEN}Default:${_CLEAR} undefined
 
+CHECK_ONLY  Only checks if the build is needed and sets the GH Action output.
+            ${_GREEN}Default:${_CLEAR} undefined
+
 ${_BOLD}Examples:${_CLEAR}
 
-${0} master
-            This will fetch the latest 'master' branch, build a Docker Image and tag it
-            'netboxcommunity/netbox:latest'.
-
-${0} develop
-            This will fetch the latest 'develop' branch, build a Docker Image and tag it
+${0} main
+            This will fetch the latest 'main' branch, build a Docker Image and tag it
             'netboxcommunity/netbox:snapshot'.
 
-${0} v2.6.6
-            This will fetch the 'v2.6.6' tag, build a Docker Image and tag it
-            'netboxcommunity/netbox:v2.6.6' and 'netboxcommunity/netbox:v2.6'.
+${0} v4.2.0
+            This will fetch the 'v4.2.0' tag, build a Docker Image and tag it
+            'netboxcommunity/netbox:v4.2.0' and 'netboxcommunity/netbox:v4.2'.
 
-${0} develop-2.7
-            This will fetch the 'develop-2.7' branch, build a Docker Image and tag it
-            'netboxcommunity/netbox:develop-2.7'.
+${0} feature
+            This will fetch the 'feature' branch, build a Docker Image and tag it
+            'netboxcommunity/netbox:feature'.
 
 SRC_ORG=cimnine ${0} feature-x
             This will fetch the 'feature-x' branch from https://github.com/cimnine/netbox.git,
@@ -137,6 +135,10 @@ END_OF_HELP
   fi
 fi
 
+# Check if we have everything needed for the build
+source ./build-functions/check-commands.sh
+# Load all build functions
+source ./build-functions/get-public-image-config.sh
 source ./build-functions/gh-functions.sh
 
 IMAGE_NAMES="${IMAGE_NAMES-docker.io/netboxcommunity/netbox}"
@@ -170,7 +172,7 @@ if [ "${2}" != "--push-only" ] && [ -z "${SKIP_GIT}" ]; then
   REMOTE_EXISTS=$(git ls-remote --heads --tags "${URL}" "${NETBOX_BRANCH}" | wc -l)
   if [ "${REMOTE_EXISTS}" == "0" ]; then
     echo "❌ Remote branch '${NETBOX_BRANCH}' not found in '${URL}'; Nothing to do"
-    gh_echo "::set-output name=skipped::true"
+    gh_out "skipped=true"
     exit 0
   fi
   echo "🌐 Checking out '${NETBOX_BRANCH}' of NetBox from the url '${URL}' into '${NETBOX_PATH}'"
@@ -215,7 +217,7 @@ fi
 # Determining the value for DOCKER_FROM
 ###
 if [ -z "$DOCKER_FROM" ]; then
-  DOCKER_FROM="ubuntu:22.04"
+  DOCKER_FROM="docker.io/ubuntu:24.04"
 fi
 
 ###
@@ -253,10 +255,7 @@ DOCKER_REGISTRY="${DOCKER_REGISTRY-docker.io}"
 DOCKER_ORG="${DOCKER_ORG-netboxcommunity}"
 DOCKER_REPO="${DOCKER_REPO-netbox}"
 case "${NETBOX_BRANCH}" in
-master)
-  TAG="${TAG-latest}"
-  ;;
-develop)
+main)
   TAG="${TAG-snapshot}"
   ;;
 *)
@@ -272,7 +271,7 @@ TARGET_DOCKER_TAG_PROJECT="${TARGET_DOCKER_TAG}-${PROJECT_VERSION}"
 
 ###
 # composing the additional DOCKER_SHORT_TAG,
-# i.e. "v2.6.1" becomes "v2.6",
+# i.e. "v4.2.0" becomes "v4.2",
 # which is only relevant for version tags
 # Also let "latest" follow the highest version
 ###
@@ -300,39 +299,37 @@ if [ -n "${TARGET_DOCKER_SHORT_TAG}" ]; then
   done
 fi
 
+FINAL_DOCKER_TAG="${IMAGE_NAME_TAGS[0]}"
 gh_env "FINAL_DOCKER_TAG=${IMAGE_NAME_TAGS[0]}"
 
 ###
 # Checking if the build is necessary,
 # meaning build only if one of those values changed:
+# - a new tag is beeing created
 # - base image digest
 # - netbox git ref (Label: netbox.git-ref)
 # - netbox-docker git ref (Label: org.opencontainers.image.revision)
 ###
-# Load information from registry (only for docker.io)
+# Load information from registry (only for first registry in "IMAGE_NAMES")
 SHOULD_BUILD="false"
 BUILD_REASON=""
 if [ -z "${GH_ACTION}" ]; then
   # Asuming non Github builds should always proceed
   SHOULD_BUILD="true"
   BUILD_REASON="${BUILD_REASON} interactive"
-elif [[ "${IMAGE_NAME_TAGS[0]}" = docker.io* ]]; then
-  source ./build-functions/get-public-image-config.sh
-  IFS=':' read -ra DOCKER_FROM_SPLIT <<<"${DOCKER_FROM}"
-  if ! [[ ${DOCKER_FROM_SPLIT[0]} =~ .*/.* ]]; then
-    # Need to use "library/..." for images the have no two part name
-    DOCKER_FROM_SPLIT[0]="library/${DOCKER_FROM_SPLIT[0]}"
-  fi
-  IFS='/' read -ra ORG_REPO <<<"${IMAGE_NAMES[0]}"
-  echo "Checking labels for '${ORG_REPO[1]}' and '${ORG_REPO[2]}'"
-  BASE_LAST_LAYER=$(get_image_last_layer "${DOCKER_FROM_SPLIT[0]}" "${DOCKER_FROM_SPLIT[1]}")
-  mapfile -t IMAGES_LAYERS_OLD < <(get_image_layers "${ORG_REPO[1]}"/"${ORG_REPO[2]}" "${TAG}")
-  NETBOX_GIT_REF_OLD=$(get_image_label netbox.git-ref "${ORG_REPO[1]}"/"${ORG_REPO[2]}" "${TAG}")
-  GIT_REF_OLD=$(get_image_label org.opencontainers.image.revision "${ORG_REPO[1]}"/"${ORG_REPO[2]}" "${TAG}")
+elif [ "false" == "$(check_if_tags_exists "${IMAGE_NAMES[0]}" "$TARGET_DOCKER_TAG")" ]; then
+  SHOULD_BUILD="true"
+  BUILD_REASON="${BUILD_REASON} newtag"
+else
+  echo "Checking labels for '${FINAL_DOCKER_TAG}'"
+  BASE_LAST_LAYER=$(get_image_last_layer "${DOCKER_FROM}")
+  OLD_BASE_LAST_LAYER=$(get_image_label netbox.last-base-image-layer "${FINAL_DOCKER_TAG}")
+  NETBOX_GIT_REF_OLD=$(get_image_label netbox.git-ref "${FINAL_DOCKER_TAG}")
+  GIT_REF_OLD=$(get_image_label org.opencontainers.image.revision "${FINAL_DOCKER_TAG}")
 
-  if ! printf '%s\n' "${IMAGES_LAYERS_OLD[@]}" | grep -q -P "^${BASE_LAST_LAYER}\$"; then
+  if [ "${BASE_LAST_LAYER}" != "${OLD_BASE_LAST_LAYER}" ]; then
     SHOULD_BUILD="true"
-    BUILD_REASON="${BUILD_REASON} debian"
+    BUILD_REASON="${BUILD_REASON} ubuntu"
   fi
   if [ "${NETBOX_GIT_REF}" != "${NETBOX_GIT_REF_OLD}" ]; then
     SHOULD_BUILD="true"
@@ -342,19 +339,21 @@ elif [[ "${IMAGE_NAME_TAGS[0]}" = docker.io* ]]; then
     SHOULD_BUILD="true"
     BUILD_REASON="${BUILD_REASON} netbox-docker"
   fi
-else
-  SHOULD_BUILD="true"
-  BUILD_REASON="${BUILD_REASON} no-check"
 fi
 
 if [ "${SHOULD_BUILD}" != "true" ]; then
   echo "Build skipped because sources didn't change"
-  echo "::set-output name=skipped::true"
+  gh_out "skipped=true"
   exit 0 # Nothing to do -> exit
 else
-  gh_echo "::set-output name=skipped::false"
+  gh_out "skipped=false"
 fi
 gh_echo "::endgroup::"
+
+if [ "${CHECK_ONLY}" = "true" ]; then
+  echo "Only check if build needed was requested. Exiting"
+  exit 0
+fi
 
 ###
 # Build the image
@@ -393,6 +392,7 @@ fi
 if [ -n "${BUILD_REASON}" ]; then
   BUILD_REASON=$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' <<<"$BUILD_REASON")
   DOCKER_BUILD_ARGS+=(--label "netbox.build-reason=${BUILD_REASON}")
+  DOCKER_BUILD_ARGS+=(--label "netbox.last-base-image-layer=${BASE_LAST_LAYER}")
 fi
 
 # --build-arg

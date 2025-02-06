@@ -46,6 +46,8 @@ if ! ./manage.py migrate --check >/dev/null 2>&1; then
   ./manage.py remove_stale_contenttypes --no-input
   echo "⚙️ Removing expired user sessions"
   ./manage.py clearsessions
+  echo "⚙️ Building search index (lazy)"
+  ./manage.py reindex --lazy
 fi
 
 # Create Superuser if required
@@ -70,24 +72,24 @@ else
   fi
 
   ./manage.py shell --interface python <<END
-from django.contrib.auth.models import User
-from users.models import Token
+from users.models import Token, User
 if not User.objects.filter(username='${SUPERUSER_NAME}'):
-    u=User.objects.create_superuser('${SUPERUSER_NAME}', '${SUPERUSER_EMAIL}', '${SUPERUSER_PASSWORD}')
+    u = User.objects.create_superuser('${SUPERUSER_NAME}', '${SUPERUSER_EMAIL}', '${SUPERUSER_PASSWORD}')
     Token.objects.create(user=u, key='${SUPERUSER_API_TOKEN}')
 END
 
   echo "💡 Superuser Username: ${SUPERUSER_NAME}, E-Mail: ${SUPERUSER_EMAIL}"
 fi
 
-# Print warning if startup scripts (and initializers) would've been run # Remove for next release
-if [ "$SKIP_STARTUP_SCRIPTS" == "true" ]; then
-  # Nothing to do
-  echo "" # Empty block not allowed
-else
-  echo "⚠️⚠️⚠️ WARNING: The initializers have been moved to a plugin. See release notes."
-  echo "⚠️⚠️⚠️ Set environment variable 'SKIP_STARTUP_SCRIPTS' to 'true' to remove this warning."
-fi
+./manage.py shell --interface python <<END
+from users.models import Token
+try:
+    old_default_token = Token.objects.get(key="0123456789abcdef0123456789abcdef01234567")
+    if old_default_token:
+        print("⚠️ Warning: You have the old default admin API token in your database. This token is widely known; please remove it. Log in as your superuser and check API Tokens in your user menu.")
+except Token.DoesNotExist:
+    pass
+END
 
 echo "✅ Initialisation is done."
 
